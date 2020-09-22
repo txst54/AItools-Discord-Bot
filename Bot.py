@@ -144,77 +144,7 @@ async def on_message(message):
     if '?' in message.content and message.channel.id == 733176263212138516 and message.author.id != 350993177316032513:
         print("send message")
         await message.channel.send("<@!350993177316032513> and <@!650055963726053376>")
-    if '!get classwork' in message.content.lower() or '!get classes' in message.content.lower():
-        creds = None
-        flow = Flow.from_client_secrets_file('credentials.json', SCOPES)
-        wsgi_app = _RedirectWSGIApp(_DEFAULT_WEB_SUCCESS_MESSAGE)
-        local_server = wsgiref.simple_server.make_server(
-            'localhost', 8080, wsgi_app, handler_class=_WSGIRequestHandler)
 
-        flow.redirect_uri = 'http://{}:{}/'.format(
-            'localhost', local_server.server_port)
-        kwargs = {'host': 'localhost', 'port': 8080,
-                  'authorization_prompt_message': _DEFAULT_AUTH_PROMPT_MESSAGE,
-                  'success_message': _DEFAULT_WEB_SUCCESS_MESSAGE,
-                  'open_browser': False}
-        auth_url, _ = flow.authorization_url(**kwargs)
-        print(_DEFAULT_AUTH_PROMPT_MESSAGE.format(url=auth_url))
-        e = discord.Embed(
-            title="Please allow AI Tools Bot to view your classwork through this link:",
-            colour=0x49FC58,
-            url=auth_url)
-        await message.channel.send(embed=e)
-        local_server.handle_request()
-
-        # Note: using https here because oauthlib is very picky that
-        # OAuth 2.0 should only occur over https.
-        authorization_response = wsgi_app.last_request_uri.replace(
-            'http', 'https')
-        flow.fetch_token(authorization_response=authorization_response)
-
-        creds = flow.credentials
-        service = build('classroom', 'v1', credentials=creds)
-
-        results = service.courses().list(pageSize=10).execute()
-        courses = results.get('courses', [])
-
-        if not courses:
-            print('No Courses Found.')
-        else:
-            print('Courses:')
-            if '!get classes' in message.content.lower():
-                for course in courses:
-                    print(course['name'])
-                    print(course[u'id'])
-                    await message.channel.send(f"**Class Name: **{course['name']}"
-                                               f"**Class ID (use this in the command): **{course[u'id']}")
-            else:
-                msg = message.content.lower()
-                msg = msg.replace('!get classwork', '')
-                msg = msg.split(';')
-                for course in msg:
-                    for i in courses:
-                        if i[u'id'] == course:
-                            await message.channel.send(f"**Classwork for course id: {i['name']}**")
-                    try:
-                        course_work_results = service.courses().courseWork().studentSubmissions().list(
-                            courseId=int(course),
-                            courseWorkId='-',
-                            userId="me").execute()
-                        print(course_work_results)
-                        try:
-                            for item in course_work_results['studentSubmissions']:
-                                if str(item.get('state', '-')) == 'TURNED_IN' or str(
-                                        item.get('state', '-')) == 'RETURNED':
-                                    continue
-                                for subitem in item.keys():
-                                    if subitem == 'updateTime' or subitem == 'alternateLink':
-                                        print(str(subitem) + str(item.get(subitem, '-')))
-                                        await message.channel.send(str(subitem) + ": " + str(item.get(subitem, '-')))
-                        except KeyError:
-                            pass
-                    except:
-                        await message.channel.send("As a reminder: Please input using the correct format")
     if '!replicate' in message.content.lower():
         uid = message.mentions[0]
         id = message.mentions[0].id
